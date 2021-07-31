@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../screens/displayScreen.dart';
-import '../components/myScaffold.dart';
-import '../components/textboxWithLabel.dart';
-import '../components/dropdownWithLabel.dart';
-import '../components/button.dart';
-import '../classes/member.dart';
-import '../resource/resource.dart';
+import './homeScreen.dart';
+import './settingsScreen.dart';
+import './components/myScaffold.dart';
+import './components/textboxWithLabel.dart';
+import './components/dropdownWithLabel.dart';
+import './components/button.dart';
+import './../model/member.dart';
+import './../model/resource/resource.dart';
 
 const hintTextList = [
   "Please enter your BITS ID Number",
-  "Please enter your password"
+  "Please enter your password",
+  "Please enter your name",
 ];
 
 enum ExcitedChoice { Yes, No }
@@ -38,6 +41,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Batch of [Member] registering selected from dropdown
   */
   int _batch = 2017;
+  /*
+    Name of the [Member]
+  */
+  String _name = "Name";
   /*
     Stores boolean whether registering [Member] wants regular updates
   */
@@ -137,6 +144,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
         FormField<String>(
+          builder: (FormFieldState<String> state) => TextboxWithLabel(
+            label: "Name",
+            hintText: hintTextList[2],
+            onTextChanged: (currentValue) {
+              setState(() {
+                _name = currentValue;
+              });
+            },
+          ),
+        ),
+        FormField<String>(
           builder: (FormFieldState<String> state) => DropdownWithLabel(
             label: "Batch",
             dropdownValue: _batch,
@@ -175,7 +193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.fromLTRB(5.0, 20.0, 70.0, 20.0),
+          padding: EdgeInsets.fromLTRB(5.0, 5.0, 70.0, 5.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(top: 15.0, bottom: 15.0),
+          padding: EdgeInsets.only(bottom: 10.0),
           child: Button(
             buttonText: "REGISTER",
             onPressed: () async {
@@ -244,21 +262,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Member newMember = Member(
                     idNumber: _idNumber,
                     password: encryptPassword(_password),
+                    name: _name,
                     batch: _batch,
                     regularUpdates: _regularUpdates,
                     excited: (_excited == ExcitedChoice.No ? false : true));
                 DTOresource.membersList?.add(newMember);
+                () async {
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
+                  prefs.setString('Name', _name);
+                  prefs.setString('Id', _idNumber);
+                };
                 DTOresource = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MyScaffold(
-                      setTitle: false,
-                      backButton: false,
-                      child: DisplayScreen(
-                        DTOresource: DTOresource,
-                        idNumber: newMember.idNumber,
-                        isPreviousPageRegister: true,
+                      bottomBar: true,
+                      child: HomeScreen(
+                        isPreviousPageRegister: false,
+                        homeBio: "homeBio",
                       ),
+                      settingsChild: SettingsScreen(),
+                      DTOresource: DTOresource,
                     ),
                   ),
                 );

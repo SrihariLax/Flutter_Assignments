@@ -2,7 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Button extends StatelessWidget {
-  Button({required this.buttonText, required this.onPressed});
+  Button(
+      {required this.buttonText,
+      required this.onPressed,
+      this.isCompressed = false});
   /*
     Text displayed on the [TextButton]
   */
@@ -11,11 +14,16 @@ class Button extends StatelessWidget {
     Behaviour of [TextButton]'s onPressed
   */
   final Function() onPressed;
+  /*
+    Boolean which stores whether button is of smaller width
+  */
+  final bool isCompressed;
 
   @override
   Widget build(BuildContext context) {
+    double compressedWidth = MediaQuery.of(context).size.width * 0.4;
     return Container(
-      width: double.infinity,
+      width: isCompressed ? compressedWidth : double.infinity,
       height: 50.0,
       child: TextButton(
         onPressed: onPressed,

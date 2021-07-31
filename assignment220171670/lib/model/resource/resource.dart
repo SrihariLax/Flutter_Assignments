@@ -1,4 +1,4 @@
-import './../classes/member.dart';
+import './../member.dart';
 
 /*
   The resource passed along between navigating pages.

@@ -1,13 +1,17 @@
+import 'package:assignment220171670/views/settingsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../screens/displayScreen.dart';
-import '../screens/registerScreen.dart';
-import '../components/myScaffold.dart';
-import '../components/textboxWithLabel.dart';
-import '../components/button.dart';
-import '../classes/member.dart';
-import '../resource/resource.dart';
+import './homeScreen.dart';
+import './registerScreen.dart';
+import './components/myScaffold.dart';
+import './components/textboxWithLabel.dart';
+import './components/button.dart';
+import './../model/member.dart';
+import './../model/resource/resource.dart';
+import './../services/storage/storageService.dart';
+import './../services/serviceLocator.dart';
 
 /*
   Used as placeholder for ID Number and Password textboxes
@@ -41,6 +45,20 @@ class _LoginScreenState extends State<LoginScreen> {
   */
   Resource DTOresource = new Resource(membersList: []);
 
+  StorageService _storageService = serviceLocator<StorageService>();
+
+  @override
+  void initState() {
+    super.initState();
+    bool isLoggedIn = false;
+    () async {
+      isLoggedIn = await _storageService.getLoginData();
+    };
+    if (isLoggedIn) {
+      navigateToHome();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -57,6 +75,23 @@ class _LoginScreenState extends State<LoginScreen> {
               showQuestion(context),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future navigateToHome() async {
+    DTOresource = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MyScaffold(
+          bottomBar: true,
+          child: HomeScreen(
+            isPreviousPageRegister: false,
+            homeBio: "homeBio",
+          ),
+          settingsChild: SettingsScreen(),
+          DTOresource: DTOresource,
         ),
       ),
     );
@@ -135,6 +170,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         registeredMember.password ==
                             encryptPassword(_password)) {
                       validMember = true;
+                      SharedPreferences prefs =
+                          await SharedPreferences.getInstance();
+                      prefs.setString('Name', registeredMember.name);
+                      prefs.setString('Id', registeredMember.idNumber);
                       break;
                     }
                   }
@@ -143,10 +182,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => MyScaffold(
-                          child: DisplayScreen(
-                            DTOresource: DTOresource,
-                            idNumber: _idNumber,
+                          bottomBar: true,
+                          child: HomeScreen(
                             isPreviousPageRegister: false,
+                            homeBio: "homeBio",
+                            DTOresource: DTOresource,
                           ),
                         ),
                       ),

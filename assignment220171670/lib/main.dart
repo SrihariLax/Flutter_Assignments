@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import './screens/loginScreen.dart';
-import './components/myScaffold.dart';
+import './views/loginScreen.dart';
+import './views/components/myScaffold.dart';
+import './services/serviceLocator.dart';
+import './controller/trackScreenViewModel.dart';
+import './controller/settingsScreenViewModel.dart';
 
 void main() {
-  runApp(MyApp());
+  setupServiceLocator();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => TrackScreenViewModel()),
+        ChangeNotifierProvider(create: (context) => SettingsScreenViewModel()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

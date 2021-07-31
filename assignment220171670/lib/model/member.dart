@@ -3,11 +3,14 @@ class Member {
     required this.idNumber,
     required this.password,
     required this.batch,
+    required this.name,
     this.regularUpdates = false,
     this.excited = true,
   });
 
   String idNumber;
+
+  String name;
 
   String password;
 
