@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import './../model/resource/resource.dart';
-
-enum HomeBio { Name, Id }
+import './../controller/settingsScreenViewModel.dart';
 
 class SettingsScreen extends StatefulWidget {
   SettingsScreen({Key? key, this.DTOresource}) : super(key: key);
@@ -17,6 +17,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   HomeBio? _homeBio = HomeBio.Name;
 
   Widget build(BuildContext) {
+    final stateGetter =
+        Provider.of<SettingsScreenViewModel>(context, listen: false);
     return Container(
       padding: EdgeInsets.fromLTRB(30.0, 50.0, 80.0, 100.0),
       child: Column(
@@ -37,11 +39,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Radio<HomeBio>(
                     value: HomeBio.Name,
-                    groupValue: _homeBio,
+                    groupValue: stateGetter.homeBio,
                     onChanged: (HomeBio? value) {
                       setState(() {
                         _homeBio = value;
                       });
+                      final stateSetter = Provider.of<SettingsScreenViewModel>(
+                          context,
+                          listen: false);
+                      stateSetter.setHomeBio(_homeBio ?? HomeBio.IdNumber);
                     },
                   ),
                   Text(
@@ -56,12 +62,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Radio<HomeBio>(
-                    value: HomeBio.Id,
-                    groupValue: _homeBio,
+                    value: HomeBio.IdNumber,
+                    groupValue: stateGetter.homeBio,
                     onChanged: (HomeBio? value) {
                       setState(() {
                         _homeBio = value;
                       });
+                      final stateSetter = Provider.of<SettingsScreenViewModel>(
+                          context,
+                          listen: false);
+                      stateSetter.setHomeBio(_homeBio ?? HomeBio.Name);
                     },
                   ),
                   Text(

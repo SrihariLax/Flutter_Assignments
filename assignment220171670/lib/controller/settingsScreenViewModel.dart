@@ -8,16 +8,27 @@ enum HomeBio { Name, IdNumber }
 class SettingsScreenViewModel extends ChangeNotifier {
   final StorageService _storageService = serviceLocator<StorageService>();
 
-  HomeBio _homeBio = HomeBio.IdNumber;
+  HomeBio _homeBio = HomeBio.Name;
 
-  getHomeBio() async {
-    String homeBioString = "homeBio";
-    if (_homeBio == HomeBio.Name) {
-      homeBioString = await _storageService.getName();
-    } else {
-      homeBioString = await _storageService.getName();
-    }
+  String _homeBioString = 'loading';
+
+  HomeBio get homeBio => _homeBio;
+
+  String get homeBioString => _homeBioString;
+
+  setHomeBio(HomeBio setting) {
+    this._homeBio = setting;
     notifyListeners();
+  }
+
+  String getHomeBio() {
+    if (_homeBio == HomeBio.Name) {
+      _storageService.getName().then((value) => this._homeBioString = value);
+    } else {
+      _storageService
+          .getIdNumber()
+          .then((value) => this._homeBioString = value);
+    }
     return homeBioString;
   }
 }

@@ -44,19 +44,26 @@ class _LoginScreenState extends State<LoginScreen> {
     Currently contains a field which stores a list of registered members (Initialised to empty in the beginning but expandable).
   */
   Resource DTOresource = new Resource(membersList: []);
+  /*
+    stores boolean whether [Member] is already logged in as per shared preferences
+  */
+  bool isLoggedIn = false;
 
   StorageService _storageService = serviceLocator<StorageService>();
 
   @override
   void initState() {
     super.initState();
-    bool isLoggedIn = false;
-    () async {
-      isLoggedIn = await _storageService.getLoginData();
-    };
-    if (isLoggedIn) {
-      navigateToHome();
-    }
+    initializeLoggedIn().whenComplete(() {
+      setState(() {});
+      if (this.isLoggedIn) {
+        navigateToHome();
+      }
+    });
+  }
+
+  Future<void> initializeLoggedIn() async {
+    this.isLoggedIn = await _storageService.getLoginData();
   }
 
   @override
@@ -89,8 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
           child: HomeScreen(
             isPreviousPageRegister: false,
             homeBio: "homeBio",
+            DTOresource: DTOresource,
           ),
-          settingsChild: SettingsScreen(),
+          settingsChild: SettingsScreen(
+            DTOresource: DTOresource,
+          ),
           DTOresource: DTOresource,
         ),
       ),
@@ -170,14 +180,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         registeredMember.password ==
                             encryptPassword(_password)) {
                       validMember = true;
-                      SharedPreferences prefs =
-                          await SharedPreferences.getInstance();
-                      prefs.setString('Name', registeredMember.name);
-                      prefs.setString('Id', registeredMember.idNumber);
+                      _storageService.saveName(registeredMember.name);
+                      _storageService.saveIdNumber(registeredMember.idNumber);
                       break;
                     }
                   }
                   if (validMember) {
+                    _storageService.saveLoginData(true);
                     DTOresource = await Navigator.push(
                       context,
                       MaterialPageRoute(

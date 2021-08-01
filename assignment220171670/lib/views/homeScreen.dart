@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 import './../model/resource/resource.dart';
 import './components/button.dart';
@@ -11,6 +12,7 @@ import './../services/serviceLocator.dart';
 import '/../controller/trackScreenViewModel.dart';
 import '/../controller/settingsScreenViewModel.dart';
 import './trackScreen.dart';
+import './../services/storage/storageService.dart';
 
 class HomeScreen extends StatefulWidget {
   HomeScreen(
@@ -25,7 +27,7 @@ class HomeScreen extends StatefulWidget {
   */
   final Resource? DTOresource;
   /*
-    ID number of the valid [Member] who successfully logged in. Displayed in the Greeting.
+    ID number or name of the valid [Member] who successfully logged in. Displayed in the Greeting.
   */
   final String homeBio;
   /*
@@ -39,13 +41,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String homeBio = "homeBio";
+
   final _trackService = serviceLocator<TrackService>();
+
+  StorageService _storageService = serviceLocator<StorageService>();
+
+  Timer _timer = Timer(const Duration(milliseconds: 200), () {});
+
+  @override
+  void dispose() {
+    super.dispose();
+    _timer.cancel();
+  }
+
   Widget build(BuildContext context) {
-    /*var homeBioState =
+    var homeBioState =
         Provider.of<SettingsScreenViewModel>(context, listen: false);
-    homeBioState.getHomeBio().then((val) => setState(() {
-          homeBio = val;
-        }));*/
+    this.homeBio = homeBioState.getHomeBio();
+
+    _timer = Timer(const Duration(milliseconds: 200), () {
+      setState(() {});
+    });
+
     return Consumer<TrackScreenViewModel>(
       builder: (context, stateGetter, _) => Center(
         child: Container(
@@ -240,9 +257,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Button(
       buttonText: "LOG OUT",
       onPressed: () {
-        Navigator.pop(context, widget.DTOresource);
+        _storageService.saveLoginData(false);
+        Navigator.pop(context);
         if (widget.isPreviousPageRegister) {
-          Navigator.pop(context, widget.DTOresource);
+          Navigator.pop(context);
         }
       },
     );

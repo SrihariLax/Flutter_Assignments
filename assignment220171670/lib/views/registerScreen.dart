@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import './homeScreen.dart';
 import './settingsScreen.dart';
@@ -10,6 +9,8 @@ import './components/dropdownWithLabel.dart';
 import './components/button.dart';
 import './../model/member.dart';
 import './../model/resource/resource.dart';
+import './../services/storage/storageService.dart';
+import './../services/serviceLocator.dart';
 
 const hintTextList = [
   "Please enter your BITS ID Number",
@@ -59,6 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   */
   Resource DTOresource = Resource();
 
+  StorageService _storageService = serviceLocator<StorageService>();
   @override
   Widget build(BuildContext context) {
     DTOresource = widget.DTOresource;
@@ -267,12 +269,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     regularUpdates: _regularUpdates,
                     excited: (_excited == ExcitedChoice.No ? false : true));
                 DTOresource.membersList?.add(newMember);
-                () async {
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                  prefs.setString('Name', _name);
-                  prefs.setString('Id', _idNumber);
-                };
+                _storageService.saveName(_name);
+                _storageService.saveIdNumber(_idNumber);
+                _storageService.saveLoginData(true);
                 DTOresource = await Navigator.push(
                   context,
                   MaterialPageRoute(
