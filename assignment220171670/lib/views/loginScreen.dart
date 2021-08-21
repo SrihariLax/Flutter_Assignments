@@ -197,6 +197,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             homeBio: "homeBio",
                             DTOresource: DTOresource,
                           ),
+                          settingsChild: SettingsScreen(
+                            DTOresource: DTOresource,
+                          ),
                         ),
                       ),
                     );
