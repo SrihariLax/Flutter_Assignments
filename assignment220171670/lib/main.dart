@@ -6,8 +6,11 @@ import './views/components/myScaffold.dart';
 import './services/serviceLocator.dart';
 import './controller/trackScreenViewModel.dart';
 import './controller/settingsScreenViewModel.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   setupServiceLocator();
   runApp(
     MultiProvider(

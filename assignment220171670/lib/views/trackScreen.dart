@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import './components/myScaffold.dart';
 import './components/textboxWithLabel.dart';
 import './components/dropdownWithLabel.dart';
 import './components/button.dart';
-import './../model/resource/resource.dart';
 import './../controller/trackScreenViewModel.dart';
-import './homeScreen.dart';
 
 class TrackScreen extends StatefulWidget {
+  TrackScreen({Key? key, required this.uid}) : super(key: key);
+
+  final String uid;
+
   @override
   _TrackScreenState createState() => _TrackScreenState();
 }
@@ -55,7 +56,7 @@ class _TrackScreenState extends State<TrackScreen> {
                       if (Provider.of<TrackScreenViewModel>(context,
                               listen: false)
                           .completedAssignments
-                          .contains(assignmentNumber)) {
+                          .containsKey(assignmentNumber)) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(
                                 'Score for this assignment already added')));
@@ -97,8 +98,9 @@ class _TrackScreenState extends State<TrackScreen> {
                           final stateSetter = Provider.of<TrackScreenViewModel>(
                               context,
                               listen: false);
-                          stateSetter.addAssignment(assignmentNumber);
-                          stateSetter.addScore(double.parse(score));
+                          stateSetter.addAssignment(widget.uid,
+                              assignmentNumber, double.parse(score));
+                          stateSetter.addScore(widget.uid, double.parse(score));
                           Navigator.pop(context);
                         }
                       },

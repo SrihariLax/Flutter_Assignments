@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import './../model/resource/resource.dart';
 import './../controller/settingsScreenViewModel.dart';
 
 class SettingsScreen extends StatefulWidget {
-  SettingsScreen({Key? key, this.DTOresource}) : super(key: key);
-
-  final Resource? DTOresource;
+  SettingsScreen({Key? key}) : super(key: key);
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();

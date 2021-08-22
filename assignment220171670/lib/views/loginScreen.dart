@@ -1,17 +1,18 @@
+import 'package:assignment220171670/services/authentication/authService.dart';
 import 'package:assignment220171670/views/settingsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import './homeScreen.dart';
 import './registerScreen.dart';
 import './components/myScaffold.dart';
 import './components/textboxWithLabel.dart';
 import './components/button.dart';
-import './../model/member.dart';
-import './../model/resource/resource.dart';
+import './../model/googleUser.dart';
 import './../services/storage/storageService.dart';
+import './../services/database/databaseService.dart';
 import './../services/serviceLocator.dart';
+import './../services/authentication/authService.dart';
 
 /*
   Used as placeholder for ID Number and Password textboxes
@@ -28,6 +29,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  AuthService _authService = serviceLocator<AuthService>();
 
   /* 
     ID Number of [Member] attempting the LOG IN
@@ -37,19 +39,17 @@ class _LoginScreenState extends State<LoginScreen> {
     Password of [Member] attempting the LOG IN
   */
   String _password = '';
-  /* 
-    Transmission resource passed along to next navigated pages and received back with updates from next pages.
-    Acts like a travelling database.
-
-    Currently contains a field which stores a list of registered members (Initialised to empty in the beginning but expandable).
-  */
-  Resource DTOresource = new Resource(membersList: []);
   /*
     stores boolean whether [Member] is already logged in as per shared preferences
   */
   bool isLoggedIn = false;
+  /*
+    Stores the current [Member]'s UID
+  */
+  String uid = 'unknown';
 
   StorageService _storageService = serviceLocator<StorageService>();
+  DatabaseService _databaseService = serviceLocator<DatabaseService>();
 
   @override
   void initState() {
@@ -79,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               showHeader(context),
               showBody(context),
+              showGoogleOption(context),
               showQuestion(context),
             ],
           ),
@@ -88,20 +89,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future navigateToHome() async {
-    DTOresource = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MyScaffold(
           bottomBar: true,
           child: HomeScreen(
             isPreviousPageRegister: false,
+            uid: uid,
             homeBio: "homeBio",
-            DTOresource: DTOresource,
           ),
-          settingsChild: SettingsScreen(
-            DTOresource: DTOresource,
-          ),
-          DTOresource: DTOresource,
+          settingsChild: SettingsScreen(),
         ),
       ),
     );
@@ -173,33 +171,27 @@ class _LoginScreenState extends State<LoginScreen> {
               buttonText: "LOG IN",
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  bool validMember = false;
-                  for (Member registeredMember
-                      in DTOresource.membersList ?? []) {
-                    if (registeredMember.idNumber == _idNumber &&
-                        registeredMember.password ==
-                            encryptPassword(_password)) {
-                      validMember = true;
-                      _storageService.saveName(registeredMember.name);
-                      _storageService.saveIdNumber(registeredMember.idNumber);
-                      break;
-                    }
-                  }
+                  /*dynamic result = await _authService.loginMember(
+                      _idNumber, encryptPassword(_password));*/
+                  _getUIDfromIdNumber(_idNumber);
+                  bool validMember = await _databaseService.doesUserExist(
+                      _idNumber, encryptPassword(_password));
+                  _storageService.saveName(
+                      await _databaseService.getNameWithIdNumber(_idNumber));
+                  _storageService.saveIdNumber(_idNumber);
                   if (validMember) {
                     _storageService.saveLoginData(true);
-                    DTOresource = await Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => MyScaffold(
                           bottomBar: true,
                           child: HomeScreen(
                             isPreviousPageRegister: false,
+                            uid: uid,
                             homeBio: "homeBio",
-                            DTOresource: DTOresource,
                           ),
-                          settingsChild: SettingsScreen(
-                            DTOresource: DTOresource,
-                          ),
+                          settingsChild: SettingsScreen(),
                         ),
                       ),
                     );
@@ -226,6 +218,55 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Widget showGoogleOption(BuildContext context) {
+    return InkWell(
+      child: Text(
+        'Sign In with Google',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Color(0xff2FC4B2),
+        ),
+      ),
+      onTap: () async {
+        GoogleUser? user = await _authService.googleSignIn();
+        bool validMember = false;
+        if (user != null &&
+            await _databaseService.isEmailRegistered(user.gmail)) {
+          validMember = true;
+          _storageService.saveName(await _databaseService.getName(user.uid));
+          _storageService
+              .saveIdNumber(await _databaseService.getIdNumber(user.uid));
+        }
+        if (validMember) {
+          _getUIDfromIdNumber(_idNumber);
+          _storageService.saveLoginData(true);
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MyScaffold(
+                bottomBar: true,
+                child: HomeScreen(
+                  isPreviousPageRegister: false,
+                  uid: user!.uid,
+                  homeBio: "homeBio",
+                ),
+                settingsChild: SettingsScreen(),
+              ),
+            ),
+          );
+        } else {
+          if (user != null) {
+            _authService.signOut();
+          }
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(
+                  'Unable to Sign In with Google : Email not registered')));
+        }
+      },
+    );
+  }
+
   Widget showQuestion(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -248,16 +289,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           onTap: () async {
-            DTOresource = await Navigator.push(
+            _authService.signOut();
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => MyScaffold(
                   setTitle: true,
                   title: "CRUX FLUTTER SUMMER GROUP",
                   backButton: false,
-                  child: RegisterScreen(
-                    DTOresource: DTOresource,
-                  ),
+                  child: RegisterScreen(),
                 ),
               ),
             );
@@ -265,5 +305,17 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ],
     );
+  }
+
+  _getUIDfromIdNumber(String idNumber) {
+    if (!idNumber.isEmpty) {
+      _databaseService.getUIDfromIdNumber(_idNumber).then(
+            (value) => setState(
+              () {
+                uid = value;
+              },
+            ),
+          );
+    }
   }
 }

@@ -1,22 +1,18 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import './bottomBar.dart';
-import './../../model/resource/resource.dart';
 
 class MyScaffold extends StatefulWidget {
-  MyScaffold(
-      {Key? key,
-      this.setTitle = false,
-      this.bottomBar = false,
-      this.title = "Flutter App Page",
-      required this.child,
-      this.settingsChild,
-      this.backButton = true,
-      this.DTOresource})
-      : super(key: key);
+  MyScaffold({
+    Key? key,
+    this.setTitle = false,
+    this.bottomBar = false,
+    this.title = "Flutter App Page",
+    required this.child,
+    this.settingsChild,
+    this.backButton = true,
+  }) : super(key: key);
 
   /*
     Title to be displayed on [AppBar] of the screen if [setTitle] is true
@@ -42,11 +38,6 @@ class MyScaffold extends StatefulWidget {
     Stores boolean whether to display the BackButton when AppBar (i.e. [setTitle]) is enabled
   */
   final bool backButton;
-  /* 
-    Transmission resource passed along to next navigated pages and received back from next pages on pop.
-    Acts like a travelling database.
-  */
-  Resource? DTOresource = Resource();
 
   @override
   _MyScaffoldState createState() => _MyScaffoldState();

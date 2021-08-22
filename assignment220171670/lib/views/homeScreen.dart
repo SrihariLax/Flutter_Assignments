@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
-import './../model/resource/resource.dart';
 import './components/button.dart';
 import './components/myScaffold.dart';
 import './components/circleWithText.dart';
@@ -13,19 +12,15 @@ import '/../controller/trackScreenViewModel.dart';
 import '/../controller/settingsScreenViewModel.dart';
 import './trackScreen.dart';
 import './../services/storage/storageService.dart';
+import './../services/authentication/authService.dart';
 
 class HomeScreen extends StatefulWidget {
   HomeScreen(
       {Key? key,
-      this.DTOresource,
       required this.homeBio,
-      required this.isPreviousPageRegister})
+      required this.isPreviousPageRegister,
+      required this.uid})
       : super(key: key);
-  /* 
-    Transmission resource passed back on pop.
-    Acts like a travelling database.
-  */
-  final Resource? DTOresource;
   /*
     ID number or name of the valid [Member] who successfully logged in. Displayed in the Greeting.
   */
@@ -34,6 +29,10 @@ class HomeScreen extends StatefulWidget {
     Stores boolean whether previous page was a Registration page. This manages number of pops required to reach initial Login Page.
   */
   final bool isPreviousPageRegister;
+  /*
+    Stores the current [Member]'s UID
+  */
+  final String uid;
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -45,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final _trackService = serviceLocator<TrackService>();
 
   StorageService _storageService = serviceLocator<StorageService>();
+
+  AuthService _authService = serviceLocator<AuthService>();
 
   Timer _timer = Timer(const Duration(milliseconds: 200), () {});
 
@@ -64,21 +65,24 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     return Consumer<TrackScreenViewModel>(
-      builder: (context, stateGetter, _) => Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.84,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              showGreeting(context),
-              showBody(context, stateGetter),
-              showScoreAndTrackButton(context, stateGetter),
-              showLogOutButton(context)
-            ],
+      builder: (context, stateGetter, _) {
+        stateGetter.initializeState(widget.uid);
+        return Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.84,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                showGreeting(context),
+                showBody(context, stateGetter),
+                showScoreAndTrackButton(context, stateGetter),
+                showLogOutButton(context)
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -240,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         setTitle: true,
                         backButton: false,
                         bottomBar: true,
-                        child: TrackScreen(),
+                        child: TrackScreen(uid: widget.uid),
                       ),
                     ),
                   );
@@ -258,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
       buttonText: "LOG OUT",
       onPressed: () {
         _storageService.saveLoginData(false);
+        _authService.signOut();
         Navigator.pop(context);
         if (widget.isPreviousPageRegister) {
           Navigator.pop(context);

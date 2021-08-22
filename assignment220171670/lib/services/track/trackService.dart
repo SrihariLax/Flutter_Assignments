@@ -1,7 +1,8 @@
 abstract class TrackService {
   double addScore(double currentSum, double newScore);
 
-  int getPercentage(int completedAssignemnts);
+  int getPercentage(int completedAssignments);
 
-  List<int> addAssignment(List<int> completedAssignments, int newAssignment);
+  Map<int, double> addAssignment(
+      Map<int, double> completedAssignments, int newAssignment, double score);
 }

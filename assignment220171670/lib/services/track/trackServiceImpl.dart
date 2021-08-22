@@ -2,11 +2,6 @@ import './trackService.dart';
 
 class TrackServiceImpl extends TrackService {
   @override
-  int getProgress() {
-    return 1;
-  }
-
-  @override
   double addScore(double currentSum, double newScore) {
     return currentSum + newScore;
   }
@@ -17,8 +12,9 @@ class TrackServiceImpl extends TrackService {
   }
 
   @override
-  List<int> addAssignment(List<int> completedAssignments, int newAssignment) {
-    completedAssignments.add(newAssignment);
+  Map<int, double> addAssignment(
+      Map<int, double> completedAssignments, int newAssignment, double score) {
+    completedAssignments[newAssignment] = score;
     return completedAssignments;
   }
 }

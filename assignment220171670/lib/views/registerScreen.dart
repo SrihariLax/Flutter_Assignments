@@ -8,21 +8,23 @@ import './components/textboxWithLabel.dart';
 import './components/dropdownWithLabel.dart';
 import './components/button.dart';
 import './../model/member.dart';
-import './../model/resource/resource.dart';
+import './../model/googleUser.dart';
 import './../services/storage/storageService.dart';
 import './../services/serviceLocator.dart';
+import './../services/database/databaseService.dart';
+import './../services/authentication/authService.dart';
 
 const hintTextList = [
   "Please enter your BITS ID Number",
   "Please enter your password",
   "Please enter your name",
+  //"Please enter your gmail id"
 ];
 
 enum ExcitedChoice { Yes, No }
 
 class RegisterScreen extends StatefulWidget {
-  RegisterScreen({Key? key, required this.DTOresource}) : super(key: key);
-  final Resource DTOresource;
+  RegisterScreen({Key? key}) : super(key: key);
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -54,16 +56,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Stores boolean whether registering [Member] is excited
   */
   ExcitedChoice? _excited = ExcitedChoice.Yes;
-  /* 
-    Transmission resource passed along to next navigated pages and received back from next pages on pop.
-    Acts like a travelling database.
-  */
-  Resource DTOresource = Resource();
+
+  bool isUsernameTaken = false;
 
   StorageService _storageService = serviceLocator<StorageService>();
+  DatabaseService _databaseService = serviceLocator<DatabaseService>();
+  AuthService _authService = serviceLocator<AuthService>();
   @override
   Widget build(BuildContext context) {
-    DTOresource = widget.DTOresource;
     return ListView(
       children: [
         Form(
@@ -118,10 +118,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (!regex.hasMatch(_idNumber)) {
               return 'Enter Valid ID Number';
             }
-            for (Member member in DTOresource.membersList ?? []) {
-              if (member.idNumber == _idNumber) {
-                return 'User already exists!';
-              }
+            _checkUsername(_idNumber);
+            if (isUsernameTaken) {
+              return 'User already exists!';
             }
             return null;
           },
@@ -156,6 +155,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
             },
           ),
         ),
+        /*FormField<String>(
+          builder: (FormFieldState<String> state) => TextboxWithLabel(
+            label: "Gmail ID",
+            hintText: hintTextList[3],
+            errorText: state.errorText,
+            onTextChanged: (currentValue) {
+              setState(() {
+                _gmail = currentValue;
+              });
+            },
+          ),
+          validator: (String? value) {
+            if (_gmail.isEmpty || _gmail == 'gmail') {
+              return 'Please enter some text';
+            }
+            String pattern = r'^[a-z0-9](\.?[a-z0-9]){5,}@.+\..+$';
+            RegExp regex = new RegExp(pattern);
+            if (!regex.hasMatch(_gmail)) {
+              return 'Enter Valid Gmail ID';
+            }
+            return null;
+          },
+        ),*/
         FormField<String>(
           builder: (FormFieldState<String> state) => DropdownWithLabel(
             label: "Batch",
@@ -261,31 +283,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
             buttonText: "REGISTER",
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                Member newMember = Member(
-                    idNumber: _idNumber,
-                    password: encryptPassword(_password),
-                    name: _name,
-                    batch: _batch,
-                    regularUpdates: _regularUpdates,
-                    excited: (_excited == ExcitedChoice.No ? false : true));
-                DTOresource.membersList?.add(newMember);
-                _storageService.saveName(_name);
-                _storageService.saveIdNumber(_idNumber);
-                _storageService.saveLoginData(true);
-                DTOresource = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MyScaffold(
-                      bottomBar: true,
-                      child: HomeScreen(
-                        isPreviousPageRegister: false,
-                        homeBio: "homeBio",
+                GoogleUser? user = await _authService.googleSignIn();
+                if (user != null) {
+                  Member newMember = Member(
+                      idNumber: _idNumber,
+                      password: encryptPassword(_password),
+                      name: _name,
+                      gmail: user.gmail,
+                      batch: _batch,
+                      regularUpdates: _regularUpdates,
+                      excited: (_excited == ExcitedChoice.No ? false : true));
+
+                  await _databaseService.updateData(
+                      user.uid, newMember, Map<String, String>(), 0);
+
+                  _storageService.saveName(_name);
+                  _storageService.saveIdNumber(_idNumber);
+                  _storageService.saveLoginData(true);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyScaffold(
+                        bottomBar: true,
+                        child: HomeScreen(
+                          isPreviousPageRegister: false,
+                          uid: user.uid,
+                          homeBio: "homeBio",
+                        ),
+                        settingsChild: SettingsScreen(),
                       ),
-                      settingsChild: SettingsScreen(),
-                      DTOresource: DTOresource,
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                          'Unable to complete registration : Invalid google account')));
+                }
               }
             },
           ),
@@ -316,10 +349,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           onTap: () {
-            Navigator.pop(context, DTOresource);
+            Navigator.pop(context);
           },
         ),
       ],
     );
+  }
+
+  _checkUsername(String username) {
+    setState(() {
+      isUsernameTaken = false;
+    });
+    if (!username.isEmpty) {
+      _databaseService.isIdNumberRegistered(_idNumber).then(
+            (value) => setState(
+              () {
+                isUsernameTaken = value != null;
+              },
+            ),
+          );
+    }
   }
 }
